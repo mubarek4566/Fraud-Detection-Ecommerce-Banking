@@ -1,65 +1,9 @@
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+import numpy as np
 
 sns.set(style="whitegrid")
-
-
-def perform_univariate_analysis(df):
-    """Univariate analysis on key columns of fraud dataset."""
-    fig, axs = plt.subplots(3, 2, figsize=(15, 12))
-
-    # Age distribution
-    sns.histplot(df["age"], kde=True, bins=20, ax=axs[0, 0])
-    axs[0, 0].set_title("Age Distribution")
-
-    # Purchase value distribution
-    sns.histplot(df["purchase_value"], kde=True, bins=20, ax=axs[0, 1])
-    axs[0, 1].set_title("Purchase Value Distribution")
-
-    # Class distribution
-    sns.countplot(x="class", data=df, ax=axs[1, 0])
-    axs[1, 0].set_title("Fraud vs Non-Fraud Count")
-    axs[1, 0].set_xticklabels(['Non-Fraud (0)', 'Fraud (1)'])
-
-    # Browser usage
-    sns.countplot(y="browser", data=df, order=df["browser"].value_counts().index, ax=axs[1, 1])
-    axs[1, 1].set_title("Browser Usage")
-
-    # Source breakdown
-    sns.countplot(x="source", data=df, ax=axs[2, 0])
-    axs[2, 0].set_title("Traffic Source")
-
-    # Sex distribution
-    sns.countplot(x="sex", data=df, ax=axs[2, 1])
-    axs[2, 1].set_title("Gender Distribution")
-
-    plt.tight_layout()
-    plt.show()
-
-
-def perform_bivariate_analysis(df):
-    """Bivariate analysis comparing features with fraud class."""
-    fig, axs = plt.subplots(2, 2, figsize=(14, 10))
-
-    # Age vs Class
-    sns.boxplot(x="class", y="age", data=df, ax=axs[0, 0])
-    axs[0, 0].set_title("Age vs Fraud Class")
-
-    # Purchase Value vs Class
-    sns.boxplot(x="class", y="purchase_value", data=df, ax=axs[0, 1])
-    axs[0, 1].set_title("Purchase Value vs Fraud Class")
-
-    # Source vs Class
-    sns.countplot(x="source", hue="class", data=df, ax=axs[1, 0])
-    axs[1, 0].set_title("Traffic Source vs Fraud Class")
-
-    # Browser vs Class
-    sns.countplot(y="browser", hue="class", data=df, ax=axs[1, 1])
-    axs[1, 1].set_title("Browser vs Fraud Class")
-
-    plt.tight_layout()
-    plt.show()
 
 def univariate_analysis(df, column):
     """Perform univariate analysis for any column."""
@@ -88,3 +32,32 @@ def bivariate_analysis(df, feature, target):
         plt.xticks(rotation=45)
     plt.tight_layout()
     plt.show()
+
+def merge_datasets(fraud_df, ip_df):
+    """
+    Merge fraud dataset with IP address country mapping dataset.
+    """
+    
+    # Convert IP addresses to numeric format in both datasets
+    fraud_df['ip_numeric'] = fraud_df['ip_address'].astype(float)
+    
+    # Sort the IP address ranges for efficient searching
+    ip_df = ip_df.sort_values('lower_bound_ip_address')
+    
+    # Function to find country for a given IP
+    def find_country(ip_num):
+        # Find the first range where lower_bound <= ip_num <= upper_bound
+        mask = (ip_df['lower_bound_ip_address'] <= ip_num) & (ip_num <= ip_df['upper_bound_ip_address'])
+        matches = ip_df[mask]
+        if len(matches) > 0:
+            return matches.iloc[0]['country']
+        return None
+    
+    # Apply the function to find countries for each IP
+    fraud_df['country'] = fraud_df['ip_numeric'].apply(find_country)
+    
+    # Convert country to categorical to save memory
+    fraud_df['country'] = fraud_df['country'].astype('category')
+    
+    return fraud_df
+
