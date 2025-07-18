@@ -61,3 +61,55 @@ def merge_datasets(fraud_df, ip_df):
     
     return fraud_df
 
+
+def engineer_features(df):
+    """
+    Perform feature engineering on the fraud dataset.
+    """
+    # Make a copy to avoid modifying the original dataframe
+    df = df.copy()
+    
+    # 1. Transaction Frequency and Velocity features
+    print("Engineering transaction frequency and velocity features...")
+    
+    # Sort by user_id and purchase_time
+    df = df.sort_values(['user_id', 'purchase_time'])
+    
+    # Calculate time since last transaction (velocity)
+    df['time_since_last_txn'] = df.groupby('user_id')['purchase_time'].diff().dt.total_seconds() / 60  # in minutes
+    
+    # Calculate transaction count (frequency)
+    df['txn_count'] = df.groupby('user_id').cumcount() + 1
+    
+    # 2. Time-Based Features
+    print("Engineering time-based features...")
+    
+    # Extract hour of day from purchase time
+    df['hour_of_day'] = df['purchase_time'].dt.hour
+    
+    # Extract day of week (Monday=0, Sunday=6)
+    df['day_of_week'] = df['purchase_time'].dt.dayofweek
+    
+    # Create time of day categories
+    bins = [0, 6, 12, 18, 24]
+    labels = ['Night', 'Morning', 'Afternoon', 'Evening']
+    df['time_of_day'] = pd.cut(df['hour_of_day'], bins=bins, labels=labels, right=False)
+    
+    # 3. Time Since Signup
+    print("Calculating time since signup...")
+    df['time_since_signup'] = (df['purchase_time'] - df['signup_time']).dt.total_seconds() / 3600  # in hours
+    
+    # Additional useful features
+    print("Creating additional features...")
+    
+    # Weekend flag
+    df['is_weekend'] = df['day_of_week'].isin([5, 6]).astype(int)
+    
+    # Browser popularity feature
+    browser_counts = df['browser'].value_counts(normalize=True)
+    df['browser_popularity'] = df['browser'].map(browser_counts)
+    
+    # Convert new categorical features
+    df['time_of_day'] = df['time_of_day'].astype('category')
+    
+    return df
