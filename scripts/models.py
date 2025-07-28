@@ -9,6 +9,8 @@ from sklearn.metrics import (
 )
 import matplotlib.pyplot as plt
 import seaborn as sns
+import json
+
 
 def train_logistic_regression(X_train, y_train):
     model = LogisticRegression(max_iter=1000)
@@ -25,6 +27,22 @@ def train_ensemble_model(X_train, y_train, model_type="xgboost"):
     
     model.fit(X_train, y_train)
     return model
+
+
+def train_rf_with_best(X_train, y_train):
+    with open("best_rf_params.json") as f:
+        best_params = json.load(f)
+    rf = RandomForestClassifier(**best_params, random_state=42)
+    rf.fit(X_train, y_train)
+    return rf
+
+def train_xgb_with_best(X_train, y_train):
+    with open("best_xgb_params.json") as f:
+        best_params = json.load(f)
+    xgb = XGBClassifier(**best_params, random_state=42, use_label_encoder=False, eval_metric='logloss')
+    xgb.fit(X_train, y_train)
+    return xgb
+
 
 
 def evaluate_model(model, X_test, y_test, model_name="Model"):
@@ -60,3 +78,22 @@ def evaluate_model(model, X_test, y_test, model_name="Model"):
         "auc_pr": auc_pr,
         "confusion_matrix": cm
     }
+
+
+def evaluate_model1(model, X_test, y_test):
+    y_pred = model.predict(X_test)
+    y_proba = model.predict_proba(X_test)[:, 1]
+
+    print("\nConfusion Matrix:")
+    print(confusion_matrix(y_test, y_pred))
+
+    print("\nClassification Report:")
+    print(classification_report(y_test, y_pred))
+
+    auc_pr = auc(*precision_recall_curve(y_test, y_proba)[::-1])
+    auc_roc = roc_auc_score(y_test, y_proba)
+
+    print(f"AUC-ROC Score: {auc_roc:.4f}")
+    print(f"AUC-PR Score: {auc_pr:.4f}")
+
+    return {"auc_roc": auc_roc, "auc_pr": auc_pr}
