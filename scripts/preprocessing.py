@@ -61,16 +61,28 @@ class preprocess:
         
         return self.df
 
-    def split_data(self, target_col='class', test_size=0.3, random_state=42):
+    def split_data(self, target_col='class', test_size=0.3):
         """
         Split data into train and test sets while preserving class distribution.
         """
         X = self.df.drop(columns=[target_col])
         y = self.df[target_col]
         
-        return train_test_split(X, y, test_size=test_size, random_state=random_state, stratify=y)
+        return train_test_split(X, y, test_size=test_size, random_state=42, stratify=y)
 
-    def apply_smote(X_train, y_train, random_state=42):
+    def apply_smote(self, X_train, y_train, random_state=42):
+        """
+        Apply SMOTE oversampling to the training data.
+        """
+        smote = SMOTE(random_state=random_state)
+        X_resampled, y_resampled = smote.fit_resample(X_train, y_train)
+        
+        print("\nAfter SMOTE:")
+        print(pd.Series(y_resampled).value_counts())
+        
+        return X_resampled, y_resampled
+
+    def apply_smote1(X_train, y_train, random_state=42):
         """
         Apply SMOTE oversampling to the training data.
         """
@@ -83,7 +95,7 @@ class preprocess:
         return X_resampled, y_resampled
 
 
-    def apply_undersampling(X_train, y_train, random_state=42):
+    def apply_undersampling(self, X_train, y_train, random_state=42):
         """
         Apply random undersampling to the training data.
         """
@@ -95,7 +107,7 @@ class preprocess:
         
         return X_resampled, y_resampled
 
-    def apply_smotetomek(X_train, y_train, random_state=42):
+    def apply_smotetomek(self, X_train, y_train, random_state=42):
         """
         Apply SMOTE + Tomek Links combination to the training data.
         """
