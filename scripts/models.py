@@ -44,7 +44,6 @@ def train_xgb_with_best(X_train, y_train):
     return xgb
 
 
-
 def evaluate_model(model, X_test, y_test, model_name="Model"):
     y_pred = model.predict(X_test)
     y_proba = model.predict_proba(X_test)[:, 1]
